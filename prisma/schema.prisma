@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Evidence {
+  id           String    @id
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  path         String
+  descricao    String?
+  policyId     String?
+  riskId       String?
+  incidentId   String?
+  uploadedBy   String
+  createdAt    DateTime  @default(now())
+  incident     Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade, map: "Evidence_incidentId_fkey")
+  policy       Policy?   @relation(fields: [policyId], references: [id], onDelete: Cascade, map: "Evidence_policyId_fkey")
+  risk         Risk?     @relation(fields: [riskId], references: [id], onDelete: Cascade, map: "Evidence_riskId_fkey")
+
+  @@index([incidentId], map: "Evidence_incidentId_fkey")
+  @@index([policyId], map: "Evidence_policyId_fkey")
+  @@index([riskId], map: "Evidence_riskId_fkey")
+  @@map("evidence")
+}
+
+model Incident {
+  id                     String           @id
+  titulo                 String
+  descricao              String           @db.Text
+  categoria              IncidentCategory
+  severidade             Severity
+  status                 IncidentStatus   @default(aberto)
+  dataDeteccao           DateTime         @default(now())
+  fonteDeteccao          String?
+  dataResposta           DateTime?
+  acaoImediata           String?          @db.Text
+  dataResolucao          DateTime?
+  resolucao              String?          @db.Text
+  causaRaiz              String?          @db.Text
+  sistemaAfetado         String?
+  dadosCompromissos      Boolean          @default(false)
+  tempoIndisponibilidade Int?
+  responsavel            String?
+  createdById            String
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime
+  evidencias             Evidence[]
+  createdBy              User             @relation(fields: [createdById], references: [id], map: "Incident_createdById_fkey")
+
+  @@index([createdById], map: "Incident_createdById_fkey")
+  @@map("incident")
+}
+
+model Policy {
+  id           String         @id
+  titulo       String
+  descricao    String         @db.Text
+  categoria    PolicyCategory
+  status       PolicyStatus   @default(rascunho)
+  versao       String         @default("1.0")
+  dataVigencia DateTime?
+  dataRevisao  DateTime?
+  aprovadoPor  String?
+  conteudo     String         @db.Text
+  tags         String?
+  createdById  String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  evidencias   Evidence[]
+  createdBy    User           @relation(fields: [createdById], references: [id], map: "Policy_createdById_fkey")
+
+  @@index([createdById], map: "Policy_createdById_fkey")
+  @@map("policy")
+}
+
+model Risk {
+  id              String        @id
+  titulo          String
+  descricao       String        @db.Text
+  categoria       RiskCategory
+  probabilidade   RiskLevel
+  impacto         RiskLevel
+  nivelRisco      RiskLevel
+  status          RiskStatus    @default(identificado)
+  estrategia      RiskStrategy?
+  planoAcao       String?       @db.Text
+  responsavel     String?
+  prazo           DateTime?
+  probResidual    RiskLevel?
+  impactoResidual RiskLevel?
+  nivelResidual   RiskLevel?
+  createdById     String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime
+  evidencias      Evidence[]
+  createdBy       User          @relation(fields: [createdById], references: [id], map: "Risk_createdById_fkey")
+
+  @@index([createdById], map: "Risk_createdById_fkey")
+  @@map("risk")
+}
+
+model User {
+  id                 String     @id
+  name               String?
+  email              String     @unique(map: "User_email_key")
+  papel              Papel      @default(ti)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime
+  mustChangePassword Boolean    @default(false)
+  password           String
+  incidentesCriados  Incident[]
+  policiesCriadas    Policy[]
+  riscosCriados      Risk[]
+
+  @@map("user")
+}
+
+enum IncidentCategory {
+  malware
+  phishing
+  acesso_nao_autorizado
+  perda_dados
+  ddos
+  vulnerabilidade
+  violacao_politica
+  outro
+
+  @@map("incident_categoria")
+}
+
+enum PolicyCategory {
+  acesso
+  dados
+  rede
+  fisica
+  desenvolvimento
+  continuidade
+  conformidade
+  uso_aceitavel
+
+  @@map("policy_categoria")
+}
+
+enum RiskCategory {
+  tecnologico
+  humano
+  processo
+  externo
+  compliance
+  reputacional
+
+  @@map("risk_categoria")
+}
+
+enum Papel {
+  admin
+  secops
+  ti
+  dono_dado
+  auditoria
+
+  @@map("user_papel")
+}
+
+enum Severity {
+  baixa
+  media
+  alta
+  critica
+
+  @@map("incident_severidade")
+}
+
+enum PolicyStatus {
+  rascunho
+  revisao
+  aprovado
+  ativo
+  obsoleto
+
+  @@map("policy_status")
+}
+
+enum RiskLevel {
+  muito_baixo
+  baixo
+  medio
+  alto
+  muito_alto
+
+  @@map("risk_probabilidade")
+}
+
+enum IncidentStatus {
+  aberto
+  em_investigacao
+  em_resolucao
+  resolvido
+  fechado
+
+  @@map("incident_status")
+}
+
+enum RiskStatus {
+  identificado
+  em_analise
+  em_tratamento
+  mitigado
+  aceito
+  transferido
+
+  @@map("risk_status")
+}
+
+enum RiskStrategy {
+  mitigar
+  aceitar
+  transferir
+  evitar
+
+  @@map("risk_estrategia")
+}
