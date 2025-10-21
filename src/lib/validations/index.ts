@@ -22,12 +22,12 @@ export * from './upload.schema';
  */
 import { ZodError } from 'zod';
 
-export interface ValidationError {
+export interface ValidationErrorDetail {
   campo: string;
   mensagem: string;
 }
 
-export function formatZodError(error: ZodError): ValidationError[] {
+export function formatZodError(error: ZodError): ValidationErrorDetail[] {
   return error.errors.map((err) => ({
     campo: err.path.join('.') || 'geral',
     mensagem: err.message,
@@ -56,9 +56,9 @@ export async function validateData<T>(
  * Classe de erro customizada para validação
  */
 export class ValidationError extends Error {
-  public errors: ValidationError[];
+  public errors: ValidationErrorDetail[];
   
-  constructor(errors: ValidationError[]) {
+  constructor(errors: ValidationErrorDetail[]) {
     super('Erro de validação');
     this.name = 'ValidationError';
     this.errors = errors;

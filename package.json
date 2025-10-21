@@ -20,7 +20,9 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:all": "npm run test && npm run test:e2e",
-    "validate": "npm run lint && npm run type-check && npm run test"
+    "validate": "npm run lint && npm run type-check && npm run test",
+    "validate:production": "node scripts/validate-production.js",
+    "postinstall": "prisma generate && next build"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -31,11 +33,12 @@
     "autoprefixer": "10.4.20",
     "bcryptjs": "^2.4.3",
     "next": "14.2.33",
-    "next-auth": "^4.24.12",
+    "next-auth": "^4.24.10",
     "postcss": "8.4.47",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "tailwindcss": "3.4.14"
+    "tailwindcss": "3.4.14",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.1",

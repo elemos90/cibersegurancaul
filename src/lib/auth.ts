@@ -14,29 +14,46 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log("🔐 [Auth] Iniciando autenticação...");
+          
           if (!credentials?.email || !credentials?.password) {
+            console.log("❌ [Auth] Credenciais vazias");
             return null;
           }
+
+          console.log("📧 [Auth] Email:", credentials.email);
 
           // Validar domínio institucional
-          if (!credentials.email.endsWith("@unilicungo.ac.mz")) {
+          /*if (!credentials.email.endsWith("@unilicungo.ac.mz")) {
             return null;
-          }
+          }*/
 
+          console.log("🔍 [Auth] Buscando usuário no banco...");
           const user = await prisma.user.findUnique({
             where: { email: credentials.email }
           });
 
-          if (!user || !user.password) {
+          if (!user) {
+            console.log("❌ [Auth] Usuário não encontrado no banco");
             return null;
           }
 
+          console.log("✅ [Auth] Usuário encontrado:", user.id, user.email);
+
+          if (!user.password) {
+            console.log("❌ [Auth] Usuário sem senha cadastrada");
+            return null;
+          }
+
+          console.log("🔑 [Auth] Verificando senha...");
           const isPasswordValid = await compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
+            console.log("❌ [Auth] Senha inválida");
             return null;
           }
 
+          console.log("✅ [Auth] Autenticação bem-sucedida!");
           return {
             id: user.id,
             email: user.email,
@@ -45,7 +62,8 @@ export const authOptions: NextAuthOptions = {
             mustChangePassword: user.mustChangePassword,
           };
         } catch (error) {
-          console.error("Erro no authorize:", error);
+          console.error("❌ [Auth] ERRO:", error);
+          console.error("❌ [Auth] Stack:", (error as Error).stack);
           return null;
         }
       }
@@ -71,38 +89,62 @@ export const authOptions: NextAuthOptions = {
       return baseUrl + "/dashboard";
     },
     async jwt({ token, user, trigger }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.papel = (user as any).papel || "ti";
-        token.mustChangePassword = (user as any).mustChangePassword || false;
-      }
-      
-      // Recarregar dados do usuário do banco quando necessário
-      if (trigger === "update" && token.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: token.email as string }
-        });
-        if (dbUser) {
-          token.mustChangePassword = dbUser.mustChangePassword;
-          token.papel = dbUser.papel;
+      try {
+        if (user) {
+          token.id = user.id;
+          token.email = user.email;
+          token.name = user.name;
+          token.papel = (user as any).papel || "ti";
+          token.mustChangePassword = (user as any).mustChangePassword || false;
         }
+        
+        // Recarregar dados do usuário do banco quando necessário
+        if (trigger === "update" && token.email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email as string }
+          });
+          if (dbUser) {
+            token.mustChangePassword = dbUser.mustChangePassword;
+            token.papel = dbUser.papel;
+          }
+        }
+        
+        return token;
+      } catch (error) {
+        console.error("❌ [Auth] Erro no callback JWT:", error);
+        // Retornar token mesmo com erro para não quebrar a sessão
+        return token;
       }
-      
-      return token;
     },
     async session({ session, token }) {
-      if (session.user && token) {
-        (session.user as any).id = token.id;
-        (session.user as any).email = token.email;
-        (session.user as any).name = token.name;
-        (session.user as any).papel = token.papel;
-        (session.user as any).mustChangePassword = token.mustChangePassword;
+      try {
+        if (session.user && token) {
+          (session.user as any).id = token.id;
+          (session.user as any).email = token.email;
+          (session.user as any).name = token.name;
+          (session.user as any).papel = token.papel;
+          (session.user as any).mustChangePassword = token.mustChangePassword;
+        }
+        return session;
+      } catch (error) {
+        console.error("❌ [Auth] Erro no callback session:", error);
+        return session;
       }
-      return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development', // Debug apenas em desenvolvimento
+  
+  // ⚠️ TEMPORÁRIO: Debug habilitado para diagnóstico em produção
+  // Mudar para false após resolver problemas de autenticação
+  debug: true,
+  
+  // Eventos para logging
+  events: {
+    async signIn({ user }) {
+      console.log("✅ [Auth] Login bem-sucedido:", user.email);
+    },
+    async signOut({ session }) {
+      console.log("🚪 [Auth] Logout:", (session?.user as any)?.email);
+    },
+  },
 };
