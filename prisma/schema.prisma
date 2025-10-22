@@ -50,7 +50,7 @@ model Incident {
   responsavel            String?
   createdById            String
   createdAt              DateTime         @default(now())
-  updatedAt              DateTime
+  updatedAt              DateTime         @default(now())
   evidencias             Evidence[]
   createdBy              User             @relation(fields: [createdById], references: [id], map: "Incident_createdById_fkey")
 
@@ -72,7 +72,7 @@ model Policy {
   tags         String?
   createdById  String
   createdAt    DateTime       @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime       @default(now())
   evidencias   Evidence[]
   createdBy    User           @relation(fields: [createdById], references: [id], map: "Policy_createdById_fkey")
 
@@ -98,7 +98,7 @@ model Risk {
   nivelResidual   RiskLevel?
   createdById     String
   createdAt       DateTime      @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime      @default(now())
   evidencias      Evidence[]
   createdBy       User          @relation(fields: [createdById], references: [id], map: "Risk_createdById_fkey")
 
@@ -112,7 +112,7 @@ model User {
   email              String     @unique(map: "User_email_key")
   papel              Papel      @default(ti)
   createdAt          DateTime   @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime   @default(now())
   mustChangePassword Boolean    @default(false)
   password           String
   incidentesCriados  Incident[]
